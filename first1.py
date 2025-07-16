@@ -9,10 +9,10 @@ st.title("🧠 발로란트 프로 요원별 픽률 분석 (2025)")
 st.markdown("2025 시즌 기준 프로 경기에서의 요원별 픽률 데이터를 시각화한 결과입니다.")
 
 # 엑셀 파일 불러오기
-uploaded_file = st.file_uploader("엑셀 파일 업로드", type=["xlsx"])
+# uploaded_file = st.file_uploader("엑셀 파일 업로드", type=["xlsx"])
 
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
+if True:
+    df = pd.read_excel("요원별_픽률_분석_2025.xlsx", encoding='euc-kr')
 
     st.subheader("📋 데이터 테이블")
     st.dataframe(df)
