@@ -2,54 +2,69 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-import re
 
-# 행정구역 → 좌표 수동 매핑 (직접 지정)
-coordinates = {
-    '서울특별시 종로구': (37.572950, 126.979357),
-    '서울특별시 중구': (37.563757, 126.997257),
-    '서울특별시 용산구': (37.531530, 126.981230),
-    '서울특별시 성동구': (37.563215, 127.036411),
-    '서울특별시 광진구': (37.545837, 127.082992),
-    # 필요시 여기에 더 추가
-}
+# Streamlit 페이지 설정
+st.set_page_config(page_title="상위 5개 행정구역 인구 지도", page_icon="🗺️", layout="wide")
 
-st.title("2025년 5월 행정구역별 인구 - 지도 시각화")
+st.title("🗺️ 상위 5개 행정구역 인구수 지도 시각화")
 
-# CSV 파일 불러오기 (파일명과 경로는 실제 환경에 맞게 수정)
+# CSV 파일 읽기
 df = pd.read_csv("202505_202505_연령별인구현황_월간.csv", encoding='euc-kr')
 
-# 괄호 안 숫자 제거: "서울특별시 종로구(11110)" → "서울특별시 종로구"
-df['행정구역'] = df['행정구역'].apply(lambda x: re.sub(r'\([^)]*\)', '', x).strip())
+# 행정구역 열에서 괄호 안 숫자 제거
+df['행정구역'] = df['행정구역'].str.replace(r"\s*\(\d+\)", "", regex=True).str.strip()
 
-# 총인구수 쉼표 제거 및 정수 변환
+# 인구수 전처리
 df['총인구수'] = df['2025년05월_계_총인구수'].str.replace(',', '').astype(int)
 
-# 상위 5개 행정구역 선택
-top5_df = df.sort_values(by='총인구수', ascending=False).head(5)
-
-# folium 지도 생성 (서울 중심)
-m = folium.Map(location=[37.55, 126.98], zoom_start=11)
-
-# 원형 마커 추가
-for _, row in top5_df.iterrows():
-    name = row['행정구역']
-    pop = row['총인구수']
-    
-    if name in coordinates:
-        lat, lon = coordinates[name]
-        folium.Circle(
-            location=(lat, lon),
-            radius=pop / 10,  # 인구수에 비례 (값 조정 가능)
-            color='pink',
-            fill=True,
-            fill_color='pink',
-            fill_opacity=0.4,
-            popup=f"{name} - 인구수: {pop:,}명"
-        ).add_to(m)
+# 연령별 컬럼 전처리
+age_columns = [col for col in df.columns if col.startswith('2025년05월_계_') and ('세' in col or '100세 이상' in col)]
+new_columns = []
+for col in age_columns:
+    if '100세 이상' in col:
+        new_columns.append('100세 이상')
     else:
-        st.warning(f"좌표가 없는 행정구역: {name}")
+        new_columns.append(col.replace('2025년05월_계_', '').replace('세', '') + '세')
+
+df_age = df[['행정구역', '총인구수'] + age_columns].copy()
+df_age.columns = ['행정구역', '총인구수'] + new_columns
+
+# 상위 5개 행정구역 추출
+top5_df = df_age.sort_values(by='총인구수', ascending=False).head(5)
+
+# 원 표시할 좌표 (행정구역명 수정 후 사용)
+region_coords = {
+    "경기도": [37.4138, 127.5183],
+    "서울특별시": [37.5665, 126.9780],
+    "부산광역시": [35.1796, 129.0756],
+    "경상남도": [35.4606, 128.2132],
+    "인천광역시": [37.4563, 126.7052]
+}
+
+# 지도 생성
+m = folium.Map(location=[36.5, 127.5], zoom_start=7)
+
+# 크고 선명한 원(circle) 추가
+for _, row in top5_df.iterrows():
+    region = row['행정구역']
+    pop = row['총인구수']
+    coords = region_coords.get(region)
+    if coords:
+        folium.Circle(
+            location=coords,
+            radius=int(pop) / 300,   # 원 크기 조정 (필요 시 /15 ~ /30 사이에서 조절)
+            color='Deeppink',
+            fill=True,
+            fill_color='Lightpink',
+            fill_opacity=0.6,       # 불투명하게 표시
+            popup=f"{region} : {pop:,}명",
+            tooltip=region
+        ).add_to(m)
 
 # 지도 출력
-st.subheader("📍 지도 시각화")
-st_folium(m, width=700, height=500)
+st.subheader("🗺️ 지도에서 상위 5개 행정구역 인구수 확인")
+st_folium(m, width=900, height=600)
+
+# 원본 데이터도 출력
+st.subheader("📊 원본 데이터 (상위 5개 행정구역)")
+st.dataframe(top5_df)
