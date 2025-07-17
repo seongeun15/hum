@@ -41,3 +41,15 @@ for _, row in top5_df.iterrows():
         folium.Circle(
             location=(lat, lon),
             radius=pop / 10,  # 인구수에 비례 (값 조정 가능)
+            color='pink',
+            fill=True,
+            fill_color='pink',
+            fill_opacity=0.4,
+            popup=f"{name} - 인구수: {pop:,}명"
+        ).add_to(m)
+    else:
+        st.warning(f"좌표가 없는 행정구역: {name}")
+
+# 지도 출력
+st.subheader("📍 지도 시각화")
+st_folium(m, width=700, height=500)
