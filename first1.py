@@ -1,35 +1,36 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
-# 제목
-st.title("💡 발로란트 요원별 픽률 분석")
+# 페이지 설정
+st.set_page_config(page_title="발로란트 요원 픽률", layout="centered")
 
-# 설명
-st.markdown("""
-이 페이지는 업로드된 엑셀 파일을 기반으로 **요원별 픽률**을 분석하고,  
-픽률 데이터를 선 그래프로 시각화합니다.
-""")
+# 타이틀
+st.title("🔥 발로란트 프로 요원별 픽률 시각화 (2025)")
 
-# 파일 업로드
-uploaded_file = st.file_uploader("📂 요원별_픽률_분석_2025.xlsx (EUC-KR 인코딩)", type=["xlsx"])
+# 엑셀 파일 경로 (같은 디렉토리에 있어야 함)
+excel_path = "요원별_픽률_분석_2025.xlsx"
 
-if uploaded_file:
-    try:
-        # 엑셀 파일 읽기
-        df = pd.read_excel(uploaded_file)
+try:
+    # 엑셀 파일 불러오기
+    df = pd.read_excel(excel_path)
 
-        # 데이터 출력
-        st.subheader("📋 원본 데이터")
-        st.dataframe(df)
+    # 데이터 표시
+    st.subheader("📋 요원별 픽률 데이터")
+    st.dataframe(df)
 
-        # 데이터 전처리 (요원별 픽률 정렬)
-        df_sorted = df.sort_values(by="픽률 (%)", ascending=False).reset_index(drop=True)
+    # 그래프 출력
+    st.subheader("📊 요원별 픽률 그래프")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.bar(df["요원"], df["픽률 (%)"], color="orange")
+    ax.set_ylabel("픽률 (%)")
+    ax.set_xlabel("요원")
+    ax.set_title("2025 시즌 기준 요원별 픽률")
+    plt.xticks(rotation=45)
 
-        # 시각화
-        st.subheader("📈 요원별 픽률 선 그래프")
-        st.line_chart(data=df_sorted, x="요원", y="픽률 (%)")
+    st.pyplot(fig)
 
-    except Exception as e:
-        st.error(f"❗ 오류가 발생했습니다: {e}")
-else:
-    st.info("엑셀 파일을 먼저 업로드해주세요.")
+except FileNotFoundError:
+    st.error(f"❗ 엑셀 파일을 찾을 수 없습니다: `{excel_path}` 를 같은 폴더에 넣어주세요.")
+except Exception as e:
+    st.error(f"❗ 오류 발생: {e}")
